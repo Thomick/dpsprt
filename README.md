@@ -1,9 +1,10 @@
 # DP-SPRT
 
 Differentially private sequential probability ratio tests, in NumPy.
-Reference implementation of the AISTATS 2026 paper
+Library implementation of the AISTATS 2026 paper
 [*Differentially Private Sequential Probability Ratio Tests*](https://arxiv.org/abs/2508.06377)
 (Michel, Basu, Kaufmann).
+You can find the Jax version used for the original release of the paper [here](https://github.com/Thomick/dpsprt_paper_code)
 
 ## Installation
 
