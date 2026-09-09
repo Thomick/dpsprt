@@ -5,7 +5,7 @@ Library implementation of [*DP-SPRT: Differentially Private Sequential Probabili
 (Michel, Basu and Kaufmann, AISTATS 2026).
 The JAX code that produced the paper's figures is [here](https://github.com/Thomick/dpsprt_paper_code).
 
-Requires Python 3.9 and NumPy. Matplotlib is needed only by the example scripts.
+Requires Python 3.9 or later and NumPy. Matplotlib is needed only by the example scripts.
 
 ## Installation
 

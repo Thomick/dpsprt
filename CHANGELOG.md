@@ -2,7 +2,7 @@
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-09-08
+## [1.2.0] - 2026-09-09
 
 First release on PyPI. Versions 1.0.0 and 1.1.0 existed only in the repository and were never published.
 
