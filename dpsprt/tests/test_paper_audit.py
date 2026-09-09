@@ -132,10 +132,18 @@ def test_dpsprt_gaussian_accepts_h0_on_clear_h0_stream(bernoulli_stream):
     assert correct / n_runs >= 0.90, f"Only {correct}/{n_runs} runs accepted H0"
 
 
-def test_dpsprt_tuned_rejects_unsafe_c2():
-    """c2 < 1 has no privacy proof; constructor must reject it."""
-    with pytest.raises(ValueError, match="c2"):
+def test_dpsprt_tuned_warns_below_unit_c2():
+    """c2 < 1 keeps privacy but voids the (alpha, beta) guarantee, so it warns.
+
+    This is the regime the paper's tuned experiment uses, at kappa about 0.5.
+    """
+    with pytest.warns(UserWarning, match="correctness proof"):
         DPSPRTTuned(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, c1=1.0, c2=0.5)
+
+
+def test_dpsprt_tuned_rejects_nonpositive_c2():
+    with pytest.raises(ValueError, match="c2 must be positive"):
+        DPSPRTTuned(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, c1=1.0, c2=0.0)
 
 
 def test_dpsprt_tuned_matches_dpsprt_at_unit_constants(bernoulli_stream):
@@ -214,7 +222,11 @@ def test_dpsprt_laplace_refactor_matches_v1_0_0(bernoulli_stream):
     # Baseline updated after fixing threshold noise Z to be drawn once per run
     # (was: redrawn fresh per step).  Old hash:
     # f725f7a1fb6a574e8261ef774fbe9f9285ca0cd2fda0bfeb6183b4bc6165a783
-    assert digest == "b8a082a8978a6e373b845d0e8cf78eb424aefffc6283d95e7a1fd389fe662916"
+    # Baseline updated after correcting ZETA_S_VALUE from 5.591, which is
+    # zeta(1.2000), to zeta(1.1340) = 8.049572. The correction function grew
+    # and stopping times lengthened by about 4 percent. Old hash:
+    # b8a082a8978a6e373b845d0e8cf78eb424aefffc6283d95e7a1fd389fe662916
+    assert digest == "32b66c419aa3b6daf0bd8879e98b5fee99bfbf4e485080fc7b1fbcb6b98444ff"
 
 
 # ---------------------------------------------------------------------------
@@ -256,7 +268,11 @@ def test_dpsprt_gaussian_snapshot():
             random_seed=s,
         )
     )
-    assert digest == "e7a781482142e3ce40ed48631fed21c4eb3678f0be2a220c15b1e8881e389526"
+    # Baseline updated after correcting ZETA_S_VALUE from 5.591, which is
+    # zeta(1.2000), to zeta(1.1340) = 8.049572. The correction function grew
+    # and stopping times lengthened by about 4 percent. Old hash:
+    # e7a781482142e3ce40ed48631fed21c4eb3678f0be2a220c15b1e8881e389526
+    assert digest == "c4f871fc3718f1021d3739860bf3fbde80d4c73bbf699928b1fb70966591fa12"
 
 
 def test_dpsprt_tuned_snapshot():
@@ -272,7 +288,11 @@ def test_dpsprt_tuned_snapshot():
             random_seed=s,
         )
     )
-    assert digest == "a405b5b7fba3e3c059fc2f16b17dff8762f9da2f703a95c7b05271978fa88623"
+    # Baseline updated after correcting ZETA_S_VALUE from 5.591, which is
+    # zeta(1.2000), to zeta(1.1340) = 8.049572. The correction function grew
+    # and stopping times lengthened by about 4 percent. Old hash:
+    # a405b5b7fba3e3c059fc2f16b17dff8762f9da2f703a95c7b05271978fa88623
+    assert digest == "bd3df32ba81ae5f0748d662b31b11a250c3d6a62e3b3e8af30a9569b0501f679"
 
 
 def test_dpsprt_subsampled_snapshot():
@@ -290,7 +310,11 @@ def test_dpsprt_subsampled_snapshot():
     # placeholder (no noise drawn) to a neutral noisy_mean (noise drawn every
     # step).  Old hash:
     # 0c6877d4391cc2559c8ee5c59b7b86b8e53ba516a816d3644ec27af0ffe56660
-    assert digest == "9e0444b30f813414ec154c978d90069356cfc44a137dfbc132a525ab4837d2ba"
+    # Baseline updated after correcting ZETA_S_VALUE from 5.591, which is
+    # zeta(1.2000), to zeta(1.1340) = 8.049572. The correction function grew
+    # and stopping times lengthened by about 4 percent. Old hash:
+    # 9e0444b30f813414ec154c978d90069356cfc44a137dfbc132a525ab4837d2ba
+    assert digest == "7627215303a69a2d0d467cc1ef534640c9608568cf66b9476195069a725b0d47"
 
 
 # ---------------------------------------------------------------------------

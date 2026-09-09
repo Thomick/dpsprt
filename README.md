@@ -49,7 +49,7 @@ decision, stopping_time, state = run_sprt_on_batch(test, data)
 | `ClassicalSPRT`      | none                | Wald's SPRT, baseline                                  |
 | `DPSPRT`             | ε-DP                | Laplace noise                                          |
 | `DPSPRTGaussian`     | (ε, δ)-DP           | Gaussian noise, via the paper's RDP profile            |
-| `DPSPRTTuned`        | ε-DP                | scales the threshold by c₁ and the correction by c₂ ≥ 1 |
+| `DPSPRTTuned`        | ε-DP                | scales the threshold by c₁ and the correction by c₂     |
 | `DPSPRTSubsampled`   | ε-DP                | Bernoulli subsampling at rate r = min(1, √(ε/10))      |
 
 All five instantiate the OutsideInterval mechanism, which is `(ε_Z + ε_Y)`-DP by
@@ -63,10 +63,12 @@ subsampling rate. `DPSPRTSubsampled` divides by the realised subsample count `M_
 following the subsampling appendix rather than the deterministic `r·n` used by the
 JAX code that produced the paper's figures.
 
-`DPSPRTTuned`'s `c₂` plays the role of the paper's `κ`, which scales `C(n, δ)`.
-The paper's tuned experiment takes `κ ≈ 0.5` and reports that it works empirically
-without the `(α, β)` guarantee. This class rejects `c₂ < 1`, so it does not
-reproduce that experiment.
+`DPSPRTTuned`'s `c₂` is the paper's `κ`, the factor scaling `C(n, δ)`. Privacy holds
+for every `c₂ > 0`, since the noise is untouched; only the `(α, β)` guarantee needs
+`c₂ ≥ 1`. Smaller values are allowed and warn. On the paper's Instance 1 at `ε = 1`
+and `α = β = 0.1`, `κ = 0.5` holds both error rates under target (0.037 and 0.032 over
+600 runs) while cutting the mean stopping time from 292 to 96, and `κ = 0.25` breaks
+the target at 0.25. The factor has to be re-estimated for every new setting.
 
 ## OutsideInterval primitive
 

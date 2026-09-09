@@ -1,5 +1,6 @@
 """Parameter dataclasses for SPRT and DP-SPRT algorithms."""
 
+import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
@@ -77,9 +78,10 @@ class DPSPRTTunedParameters(DPSPRTParameters):
     """DP-SPRT parameters scaling the threshold by ``c1`` and the correction by ``c2``.
 
     The paper's correction function is ``C(n, delta) = 6 log(n^s zeta(s) / delta) / (n eps)``,
-    and ``c2`` scales it.  ``c2`` plays the role of the paper's kappa, which its
-    tuned experiment sets to about 0.5.  ``c2 < 1`` is rejected here, so this
-    class does not reproduce that experiment; see the note in the README.
+    and ``c2`` scales it, playing the role of the paper's kappa.  Privacy holds for
+    every ``c2 > 0``, since the noise is unchanged; only the ``(alpha, beta)``
+    guarantee needs ``c2 >= 1``.  ``c2 < 1`` is therefore allowed and warns, which
+    is the regime the paper's tuned experiment uses at kappa about 0.5.
     """
 
     c1: float = 1.0
@@ -89,13 +91,18 @@ class DPSPRTTunedParameters(DPSPRTParameters):
         super()._validate()
         if self.c1 <= 0:
             raise ValueError(f"c1 must be positive, got {self.c1}")
+        if self.c2 <= 0:
+            raise ValueError(f"c2 must be positive, got {self.c2}")
         if self.c2 < 1.0:
-            raise ValueError(
-                f"c2 must be >= 1.0, got {self.c2}. A smaller value shrinks the "
-                "correction function below what the correctness proof requires, so "
-                "the (alpha, beta) guarantee no longer holds. The paper's tuned "
-                "experiment does exactly that with kappa about 0.5 and reports it "
-                "works empirically without the guarantee."
+            warnings.warn(
+                f"c2={self.c2} shrinks the correction function below what the "
+                "correctness proof requires, so the (alpha, beta) guarantee no "
+                "longer holds. Privacy is unaffected. The paper's tuned experiment "
+                "runs this regime at kappa about 0.5 and reports that error rates "
+                "stay under target, but the factor has to be re-estimated for every "
+                "new set of parameters.",
+                UserWarning,
+                stacklevel=3,
             )
 
     def to_dict(self) -> Dict[str, Any]:
