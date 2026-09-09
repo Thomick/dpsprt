@@ -12,9 +12,10 @@ Usage:
     python examples/paper_experiments.py
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
-from dpsprt import ClassicalSPRT, DPSPRT, DPSPRTGaussian, DPSPRTSubsampled
+import numpy as np
+
+from dpsprt import DPSPRT, ClassicalSPRT, DPSPRTGaussian, DPSPRTSubsampled
 
 # ---------------------------------------------------------------------------
 # Experiment parameters — match paper run_all.py

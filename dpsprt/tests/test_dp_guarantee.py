@@ -5,9 +5,12 @@ that the empirical decision distribution is consistent with the
 claimed (epsilon, delta)-DP. Tests are slow and gated by the
 'slow' marker (registered in pyproject.toml).
 """
+
+from collections import Counter
+
 import numpy as np
 import pytest
-from collections import Counter
+
 from dpsprt import DPSPRT, DPSPRTGaussian, DPSPRTSubsampled
 
 pytestmark = pytest.mark.slow
@@ -46,16 +49,21 @@ def test_dpsprt_laplace_empirical_dp_neighbours():
         pa = (counts_a.get(k, 0) + 1) / (n_trials + len(keys))
         pb = (counts_b.get(k, 0) + 1) / (n_trials + len(keys))
         max_log_ratio = max(max_log_ratio, abs(np.log(pa / pb)))
-    assert max_log_ratio <= eps + 0.5, (
-        f"max log-ratio {max_log_ratio:.3f} exceeds eps+slack={eps + 0.5}"
-    )
+    assert (
+        max_log_ratio <= eps + 0.5
+    ), f"max log-ratio {max_log_ratio:.3f} exceeds eps+slack={eps + 0.5}"
 
 
 def _run_dpsprt_gaussian_to_decision(data, eps, delta, seed):
     """Run DPSPRTGaussian on a fixed dataset and return (decision, stopping-time-bucket)."""
     test = DPSPRTGaussian(
-        mu0=0.3, mu1=0.7, alpha=0.1, beta=0.1,
-        epsilon=eps, delta=delta, random_seed=seed,
+        mu0=0.3,
+        mu1=0.7,
+        alpha=0.1,
+        beta=0.1,
+        epsilon=eps,
+        delta=delta,
+        random_seed=seed,
     )
     for i, x in enumerate(data):
         can_stop, decision = test.add_sample(int(x))
@@ -79,23 +87,25 @@ def test_dpsprt_gaussian_empirical_eps_delta_dp():
         _run_dpsprt_gaussian_to_decision(data_a, eps, delta, s) for s in range(n_trials)
     )
     counts_b = Counter(
-        _run_dpsprt_gaussian_to_decision(data_b, eps, delta, s + n_trials)
-        for s in range(n_trials)
+        _run_dpsprt_gaussian_to_decision(data_b, eps, delta, s + n_trials) for s in range(n_trials)
     )
     keys = set(counts_a) | set(counts_b)
     ratios = sorted(
-        abs(np.log(
-            (counts_a.get(k, 0) + 1) / (n_trials + len(keys)) /
-            ((counts_b.get(k, 0) + 1) / (n_trials + len(keys)))
-        ))
+        abs(
+            np.log(
+                (counts_a.get(k, 0) + 1)
+                / (n_trials + len(keys))
+                / ((counts_b.get(k, 0) + 1) / (n_trials + len(keys)))
+            )
+        )
         for k in keys
     )
     # Drop the top-δ fraction before checking the high-probability bound
     cutoff = max(0, int(len(ratios) * (1 - delta)))
     high_prob_max = ratios[cutoff - 1] if cutoff > 0 else 0.0
-    assert high_prob_max <= eps + 0.5, (
-        f"high-prob max log-ratio {high_prob_max:.3f} exceeds eps+slack={eps + 0.5}"
-    )
+    assert (
+        high_prob_max <= eps + 0.5
+    ), f"high-prob max log-ratio {high_prob_max:.3f} exceeds eps+slack={eps + 0.5}"
 
 
 def _run_dpsprt_subsampled_to_decision(data, eps, seed):
@@ -115,9 +125,7 @@ def test_dpsprt_subsampled_empirical_dp_neighbours():
     base = np.tile([1, 0, 1, 1, 0, 1, 0, 1, 1, 1], 200)
     data_a = np.concatenate([np.array([1]), base[1:]])
     data_b = np.concatenate([np.array([0]), base[1:]])
-    counts_a = Counter(
-        _run_dpsprt_subsampled_to_decision(data_a, eps, s) for s in range(n_trials)
-    )
+    counts_a = Counter(_run_dpsprt_subsampled_to_decision(data_a, eps, s) for s in range(n_trials))
     counts_b = Counter(
         _run_dpsprt_subsampled_to_decision(data_b, eps, s + n_trials) for s in range(n_trials)
     )
@@ -127,6 +135,6 @@ def test_dpsprt_subsampled_empirical_dp_neighbours():
         pa = (counts_a.get(k, 0) + 1) / (n_trials + len(keys))
         pb = (counts_b.get(k, 0) + 1) / (n_trials + len(keys))
         max_log_ratio = max(max_log_ratio, abs(np.log(pa / pb)))
-    assert max_log_ratio <= eps + 0.5, (
-        f"max log-ratio {max_log_ratio:.3f} exceeds eps+slack={eps + 0.5}"
-    )
+    assert (
+        max_log_ratio <= eps + 0.5
+    ), f"max log-ratio {max_log_ratio:.3f} exceeds eps+slack={eps + 0.5}"

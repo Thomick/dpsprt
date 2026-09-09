@@ -4,12 +4,12 @@ Each class is a thin wrapper around the corresponding implementation in
 ``dpsprt.core.sprt`` that adds parameter validation and a uniform interface.
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from ..core.sprt import ClassicalSPRT as CoreClassicalSPRT
 from ..core.sprt import DPSPRT as CoreDPSPRT
+from ..core.sprt import ClassicalSPRT as CoreClassicalSPRT
 from ..core.sprt import DPSPRTGaussian as CoreDPSPRTGaussian
 from ..core.sprt import DPSPRTSubsampled as CoreDPSPRTSubsampled
 from ..core.sprt import DPSPRTTuned as CoreDPSPRTTuned
@@ -29,40 +29,35 @@ class BaseSPRT:
         self.is_dp_algorithm = is_dp_algorithm
         # Sample history is recorded for non-DP variants only; recording the
         # raw stream alongside a DP algorithm would defeat its privacy.
-        self._sample_history = [] if not is_dp_algorithm else None
+        self._sample_history: List[int] = []
 
     def add_sample(self, x: int) -> Tuple[bool, int]:
         if x not in (0, 1):
             raise ValueError(f"Sample must be 0 or 1, got {x}")
         if not self.is_dp_algorithm:
             self._sample_history.append(x)
-        return self.algorithm.add_sample(x)
+        can_stop, decision = self.algorithm.add_sample(x)
+        return bool(can_stop), int(decision)
 
     def reset(self):
         self.algorithm.reset()
-        if not self.is_dp_algorithm:
-            self._sample_history = []
+        self._sample_history = []
 
     def get_state(self) -> Dict[str, Any]:
-        state = self.algorithm.get_state()
+        state: Dict[str, Any] = self.algorithm.get_state()
         if not self.is_dp_algorithm:
             state["sample_history"] = self._sample_history.copy()
         return state
 
     def get_sample_count(self) -> int:
-        """Number of samples seen so far (non-DP variants only)."""
-        if self.is_dp_algorithm:
-            raise ValueError(
-                "Sample count not available for DP algorithms — exposing it would "
-                "leak the stream length."
-            )
-        return len(self._sample_history)
+        """Number of samples fed to ``add_sample`` so far."""
+        return int(self.algorithm.t)
 
     def has_stopped(self) -> bool:
-        return self.algorithm.stopped
+        return bool(self.algorithm.stopped)
 
     def get_decision(self) -> int:
-        return self.algorithm.decision
+        return int(self.algorithm.decision)
 
 
 class ClassicalSPRT(BaseSPRT):
@@ -149,13 +144,6 @@ class DPSPRTSubsampled(BaseSPRT):
         super().__init__(
             CoreDPSPRTSubsampled(mu0, mu1, alpha, beta, epsilon, random_seed),
             is_dp_algorithm=True,
-        )
-
-    def get_subsampling_info(self) -> Dict[str, Any]:
-        """Always raises — exposing subsampling decisions would leak data."""
-        raise ValueError(
-            "Subsampling details not available for DP algorithms — exposing per-step "
-            "inclusion decisions would leak data."
         )
 
 

@@ -179,3 +179,6 @@ privacy_results.*
 # Temporary files
 *.tmp
 *.bak
+
+# uv lockfile: a library should not pin its dependency graph for contributors.
+uv.lock

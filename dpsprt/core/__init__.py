@@ -15,8 +15,8 @@ from .algorithms import (
 from .constants import DEFAULT_MAX_SAMPLES, NUMERICAL_EPSILON, ZETA_S_PARAMETER, ZETA_S_VALUE
 from .outside_interval import OutsideIntervalCore
 from .sprt import (
-    ClassicalSPRT,
     DPSPRT,
+    ClassicalSPRT,
     DPSPRTGaussian,
     DPSPRTSubsampled,
     DPSPRTTuned,

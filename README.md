@@ -1,10 +1,11 @@
 # DP-SPRT
 
 Differentially private sequential probability ratio tests, in NumPy.
-Library implementation of the AISTATS 2026 paper
-[*Differentially Private Sequential Probability Ratio Tests*](https://arxiv.org/abs/2508.06377)
-(Michel, Basu, Kaufmann).
-You can find the Jax version used for the original release of the paper [here](https://github.com/Thomick/dpsprt_paper_code)
+Library implementation of [*DP-SPRT: Differentially Private Sequential Probability Ratio Tests*](https://proceedings.mlr.press/v300/michel26a.html)
+(Michel, Basu and Kaufmann, AISTATS 2026).
+The JAX code that produced the paper's figures is [here](https://github.com/Thomick/dpsprt_paper_code).
+
+Requires Python 3.9 and NumPy. Matplotlib is needed only by the example scripts.
 
 ## Installation
 
@@ -32,12 +33,13 @@ for t, x in enumerate(data, 1):
         break
 ```
 
-For a one-shot batch interface, use `run_streaming_sprt_on_batch`:
+For a one-shot batch interface, use `run_sprt_on_batch`. It calls `reset()` first,
+so it starts a fresh run with a new threshold noise draw:
 
 ```python
-from dpsprt.api.sprt import run_streaming_sprt_on_batch
+from dpsprt import run_sprt_on_batch
 
-decision, stopping_time, state = run_streaming_sprt_on_batch(test, data)
+decision, stopping_time, state = run_sprt_on_batch(test, data)
 ```
 
 ## Algorithms
@@ -65,8 +67,8 @@ eps = 1.0
 oi = OutsideInterval(
     lower_threshold=lambda t: -1.0,
     upper_threshold=lambda t:  1.0,
-    query_noise_scale=2.0 / eps,
-    threshold_noise_scale=1.0 / eps,
+    query_noise_scale=4.0 / eps,       # Lap(4 * Delta / eps) on each query
+    threshold_noise_scale=2.0 / eps,   # Lap(2 * Delta / eps) once, shared by both sides
     epsilon=eps,
     random_seed=0,
 )
@@ -78,6 +80,15 @@ for value in sensor_stream:
         break
 ```
 
+The noise scales alone set the guarantee. `epsilon` is the budget you declare, and
+the constructor rejects a declaration that disagrees with what the scales implement.
+Theorem 1(i) of the paper gives that budget as `eps_Z + eps_Y`, where `Z` answers a
+sensitivity-`Delta` query and `Y` a sensitivity-`2 * Delta` one, so the scales above
+split a total `eps` evenly. Pass `sensitivity` if your queries are not sensitivity 1,
+and `epsilon_tol=None` to waive the check for non-Laplace noise.
+
+The caller must supply query values of sensitivity at most `Delta`.
+
 ## Examples
 
 Runnable scripts under `examples/`:
@@ -87,13 +98,29 @@ Runnable scripts under `examples/`:
 - `stopping_times_demo.py` — side-by-side comparison on a single stream.
 - `outside_interval_demo.py` — `OutsideInterval` on a band-crossing scenario.
 
+## Privacy caveat
+
+Noise is drawn with NumPy floating-point arithmetic and a non-cryptographic
+generator, so the guarantees are those of the idealized real-valued mechanisms.
+The known floating-point attacks on differentially private samplers are out of
+scope, and this library is not hardened against them.
+
 ## Citation
 
 ```bibtex
-@article{michel2025dpsprt,
-  title   = {DP-SPRT: Differentially Private Sequential Probability Ratio Tests},
-  author  = {Michel, Thomas and Basu, Debabrota and Kaufmann, Emilie},
-  journal = {arXiv preprint arXiv:2508.06377},
-  year    = {2025}
+@InProceedings{pmlr-v300-michel26a,
+  title     = {DP-SPRT: Differentially Private Sequential Probability Ratio Tests},
+  author    = {Michel, Thomas and Basu, Debabrota and Kaufmann, Emilie},
+  booktitle = {Proceedings of The 29th International Conference on Artificial Intelligence and Statistics},
+  pages     = {3097--3105},
+  year      = {2026},
+  volume    = {300},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {PMLR},
+  url       = {https://proceedings.mlr.press/v300/michel26a.html}
 }
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).

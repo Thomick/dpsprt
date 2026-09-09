@@ -1,0 +1,8 @@
+include LICENSE
+include README.md
+include CHANGELOG.md
+recursive-include dpsprt/tests *.py
+recursive-include examples *.py
+recursive-include docs *.md
+global-exclude *.py[cod]
+global-exclude __pycache__/*

@@ -4,14 +4,14 @@ import os
 import sys
 from pathlib import Path
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from dpsprt.api.sprt import (  # noqa: E402
-    ClassicalSPRT,
     DPSPRT,
+    ClassicalSPRT,
     DPSPRTGaussian,
     DPSPRTSubsampled,
     DPSPRTTuned,
@@ -75,8 +75,15 @@ def plot(results, epsilons, output_path, mu0, mu1, alpha, beta):
         means = [np.mean(results[name][e]) for e in epsilons]
         stds = [np.std(results[name][e]) for e in epsilons]
         plt.errorbar(
-            epsilons, means, yerr=stds, label=name,
-            color=style["color"], marker=style["marker"], linewidth=2, markersize=6, capsize=3,
+            epsilons,
+            means,
+            yerr=stds,
+            label=name,
+            color=style["color"],
+            marker=style["marker"],
+            linewidth=2,
+            markersize=6,
+            capsize=3,
         )
     plt.xlabel("Privacy parameter ε", fontsize=12)
     plt.ylabel("Average stopping time (samples)", fontsize=12)
@@ -99,8 +106,14 @@ def main():
     alpha = beta = 0.05
     epsilons = [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0]
     results = sweep(
-        mu0, mu1, alpha, beta,
-        epsilons=epsilons, n_trials=50, max_samples=100_000, seed=42,
+        mu0,
+        mu1,
+        alpha,
+        beta,
+        epsilons=epsilons,
+        n_trials=50,
+        max_samples=100_000,
+        seed=42,
     )
     output_path = Path(__file__).parent / "stopping_times_vs_epsilon.png"
     plot(results, epsilons, output_path, mu0, mu1, alpha, beta)

@@ -1,4 +1,5 @@
 """Shared fixtures for the test suite."""
+
 import numpy as np
 import pytest
 
@@ -16,7 +17,9 @@ def bernoulli_stream(rng):
     Note: all calls share the module-level seeded rng; successive calls/iterations
     consume non-overlapping prefixes of the same stream.
     """
+
     def _stream(p):
         while True:
             yield int(rng.random() < p)
+
     return _stream

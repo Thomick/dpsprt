@@ -118,16 +118,14 @@ class TestStateManagement:
         can_stop, decision = classical_test.add_sample(1)
         assert classical_test.get_sample_count() == 1
 
-        # Test with DP algorithm (cannot access sample count, but other functionality should work)
+        # Test with DP algorithm
         dp_test = DPSPRT(mu0=0.4, mu1=0.6, alpha=0.05, beta=0.05, epsilon=1.0, random_seed=42)
 
         # Add some samples
         dp_test.add_sample(1)
         dp_test.add_sample(0)
 
-        # Cannot access sample count for DP algorithms
-        with pytest.raises(ValueError, match="Sample count not available for DP algorithms"):
-            dp_test.get_sample_count()
+        assert dp_test.get_sample_count() == 2
 
         # But basic functionality should still work
         assert not dp_test.has_stopped()
@@ -161,7 +159,7 @@ class TestStateManagement:
             assert key not in dp_state, f"Privacy-leaking key should not be present: {key}"
 
         assert dp_state["decision"] == 0
-        assert dp_state["stopped"] == False
+        assert dp_state["stopped"] is False
         assert dp_state["epsilon"] == 1.0
 
         # Test Classical algorithm - should expose full state (non-private)
@@ -216,26 +214,25 @@ class TestStateManagement:
         can_stop_again, decision_again = test.add_sample(0)
 
         # Should maintain same decision
-        assert can_stop_again == True
+        assert can_stop_again is True
         assert decision_again == final_decision
 
 
 class TestSubsampling:
     """Test subsampling-specific functionality."""
 
-    def test_subsampling_privacy_restriction(self):
-        """Test that subsampling information is restricted for privacy."""
+    def test_subsampling_decisions_stay_out_of_public_state(self):
+        """Per-step inclusion decisions must not reach get_state()."""
         test = DPSPRTSubsampled(
             mu0=0.4, mu1=0.6, alpha=0.05, beta=0.05, epsilon=2.0, random_seed=42
         )
-
-        # Add samples
         for i in range(20):
             test.add_sample(1 if i % 2 == 0 else 0)
 
-        # Subsampling info should not be accessible for DP algorithms
-        with pytest.raises(ValueError, match="Subsampling details not available for DP algorithms"):
-            test.get_subsampling_info()
+        state = test.get_state()
+        for key in ("subsampling_decisions", "subsampled_count", "noisy_means"):
+            assert key not in state, f"privacy-leaking key in public state: {key}"
+        assert not hasattr(test, "get_subsampling_info")
 
 
 class TestTuned:
@@ -270,9 +267,7 @@ class TestBatchHelper:
     def test_run_streaming_on_batch_helper(self):
         """Test the helper function for running algorithms on data arrays."""
         # Create algorithm
-        test = DPSPRT(
-            mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, random_seed=42
-        )
+        test = DPSPRT(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, random_seed=42)
 
         # Generate test data
         np.random.seed(456)
@@ -313,9 +308,8 @@ class TestPrivacyRestrictions:
             algo.add_sample(1)
             algo.add_sample(0)
 
-            # Should not be able to access sample count
-            with pytest.raises(ValueError, match="Sample count not available for DP algorithms"):
-                algo.get_sample_count()
+            # The caller counts its own add_sample calls, so the count is not secret.
+            assert algo.get_sample_count() == 2
 
             # get_state should only return privacy-safe information
             state = algo.get_state()
@@ -384,7 +378,7 @@ class TestParameterValidation:
             test.add_sample(-1)
 
         with pytest.raises(ValueError, match="Sample must be 0 or 1"):
-            test.add_sample(0.5)
+            test.add_sample(0.5)  # type: ignore[arg-type]
 
     def test_parameter_validation_at_construction(self):
         """Test that invalid parameters are caught at construction."""

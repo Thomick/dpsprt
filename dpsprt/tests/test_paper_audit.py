@@ -1,8 +1,12 @@
 """Behavioural conformance tests for all public DP-SPRT classes."""
+
 import itertools
+from typing import Any
+
 import numpy as np
 import pytest
-from dpsprt import ClassicalSPRT, DPSPRT, DPSPRTGaussian, DPSPRTTuned, DPSPRTSubsampled
+
+from dpsprt import DPSPRT, ClassicalSPRT, DPSPRTGaussian, DPSPRTSubsampled, DPSPRTTuned
 
 
 def test_classical_sprt_accepts_h1_on_clear_h1_stream(bernoulli_stream):
@@ -34,7 +38,6 @@ def test_classical_sprt_accepts_h0_on_clear_h0_stream(bernoulli_stream):
                     accepts_h0 += 1
                 break
     assert accepts_h0 / n_runs >= 0.95, f"Only {accepts_h0}/{n_runs} runs accepted H0"
-
 
 
 def test_dpsprt_laplace_accepts_correct_hypothesis(bernoulli_stream):
@@ -80,8 +83,9 @@ def test_dpsprt_stopping_time_decreases_with_epsilon(bernoulli_stream):
                     break
             times.append(steps)
         medians.append(np.median(times))
-    assert medians == sorted(medians, reverse=True), f"non-monotone median stopping times: {medians}"
-
+    assert medians == sorted(
+        medians, reverse=True
+    ), f"non-monotone median stopping times: {medians}"
 
 
 def test_dpsprt_gaussian_accepts_correct_hypothesis(bernoulli_stream):
@@ -89,8 +93,13 @@ def test_dpsprt_gaussian_accepts_correct_hypothesis(bernoulli_stream):
     n_runs, correct = 200, 0
     for seed in range(n_runs):
         test = DPSPRTGaussian(
-            mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05,
-            epsilon=2.0, delta=1e-5, random_seed=seed,
+            mu0=0.3,
+            mu1=0.7,
+            alpha=0.05,
+            beta=0.05,
+            epsilon=2.0,
+            delta=1e-5,
+            random_seed=seed,
         )
         for x in itertools.islice(bernoulli_stream(0.9), 5000):
             can_stop, decision = test.add_sample(x)
@@ -106,8 +115,13 @@ def test_dpsprt_gaussian_accepts_h0_on_clear_h0_stream(bernoulli_stream):
     n_runs, correct = 200, 0
     for seed in range(n_runs):
         test = DPSPRTGaussian(
-            mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05,
-            epsilon=2.0, delta=1e-5, random_seed=seed,
+            mu0=0.3,
+            mu1=0.7,
+            alpha=0.05,
+            beta=0.05,
+            epsilon=2.0,
+            delta=1e-5,
+            random_seed=seed,
         )
         for x in itertools.islice(bernoulli_stream(0.1), 5000):
             can_stop, decision = test.add_sample(x)
@@ -118,28 +132,22 @@ def test_dpsprt_gaussian_accepts_h0_on_clear_h0_stream(bernoulli_stream):
     assert correct / n_runs >= 0.90, f"Only {correct}/{n_runs} runs accepted H0"
 
 
-from dpsprt import DPSPRTTuned
-
-
 def test_dpsprt_tuned_rejects_unsafe_c2():
     """c2 < 1 has no privacy proof; constructor must reject it."""
     with pytest.raises(ValueError, match="c2"):
-        DPSPRTTuned(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05,
-                    epsilon=1.0, c1=1.0, c2=0.5)
+        DPSPRTTuned(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, c1=1.0, c2=0.5)
 
 
 def test_dpsprt_tuned_matches_dpsprt_at_unit_constants(bernoulli_stream):
     """DPSPRTTuned(c1=1, c2=1) must be numerically identical to DPSPRT on same seed."""
     data = list(itertools.islice(bernoulli_stream(0.6), 200))
     a = DPSPRT(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, random_seed=7)
-    b = DPSPRTTuned(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0,
-                    c1=1.0, c2=1.0, random_seed=7)
+    b = DPSPRTTuned(
+        mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, c1=1.0, c2=1.0, random_seed=7
+    )
     out_a = [a.add_sample(x) for x in data]
     out_b = [b.add_sample(x) for x in data]
     assert out_a == out_b, "DPSPRTTuned(c1=1,c2=1) differs from DPSPRT"
-
-
-from dpsprt import DPSPRTSubsampled
 
 
 def test_dpsprt_subsampled_accepts_correct_hypothesis(bernoulli_stream):
@@ -147,7 +155,12 @@ def test_dpsprt_subsampled_accepts_correct_hypothesis(bernoulli_stream):
     n_runs, correct = 200, 0
     for seed in range(n_runs):
         test = DPSPRTSubsampled(
-            mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=2.0, random_seed=seed,
+            mu0=0.3,
+            mu1=0.7,
+            alpha=0.05,
+            beta=0.05,
+            epsilon=2.0,
+            random_seed=seed,
         )
         for x in itertools.islice(bernoulli_stream(0.9), 10000):
             can_stop, decision = test.add_sample(x)
@@ -163,7 +176,12 @@ def test_dpsprt_subsampled_accepts_h0_on_clear_h0_stream(bernoulli_stream):
     n_runs, correct = 200, 0
     for seed in range(n_runs):
         test = DPSPRTSubsampled(
-            mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=2.0, random_seed=seed,
+            mu0=0.3,
+            mu1=0.7,
+            alpha=0.05,
+            beta=0.05,
+            epsilon=2.0,
+            random_seed=seed,
         )
         for x in itertools.islice(bernoulli_stream(0.1), 10000):
             can_stop, decision = test.add_sample(x)
@@ -181,7 +199,8 @@ def test_dpsprt_laplace_refactor_matches_v1_0_0(bernoulli_stream):
     verify after refactoring.  A mismatch means the refactor changed numerical
     behaviour and must be investigated.
     """
-    import hashlib, json
+    import hashlib
+    import json
 
     decisions = []
     for seed in range(50):
@@ -210,7 +229,9 @@ def _per_seed_stream(p, seed):
 
 
 def _decisions_hash(make_test, n_seeds=50, p=0.6, max_steps=1000):
-    import hashlib, json
+    import hashlib
+    import json
+
     decisions = []
     for seed in range(n_seeds):
         test = make_test(seed)
@@ -226,8 +247,13 @@ def test_dpsprt_gaussian_snapshot():
     """Regression anchor for DPSPRTGaussian.  Bump deliberately on intended changes."""
     digest = _decisions_hash(
         lambda s: DPSPRTGaussian(
-            mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05,
-            epsilon=1.0, delta=1e-5, random_seed=s,
+            mu0=0.3,
+            mu1=0.7,
+            alpha=0.05,
+            beta=0.05,
+            epsilon=1.0,
+            delta=1e-5,
+            random_seed=s,
         )
     )
     assert digest == "e7a781482142e3ce40ed48631fed21c4eb3678f0be2a220c15b1e8881e389526"
@@ -236,8 +262,14 @@ def test_dpsprt_gaussian_snapshot():
 def test_dpsprt_tuned_snapshot():
     digest = _decisions_hash(
         lambda s: DPSPRTTuned(
-            mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05,
-            epsilon=1.0, c1=1.0, c2=1.0, random_seed=s,
+            mu0=0.3,
+            mu1=0.7,
+            alpha=0.05,
+            beta=0.05,
+            epsilon=1.0,
+            c1=1.0,
+            c2=1.0,
+            random_seed=s,
         )
     )
     assert digest == "a405b5b7fba3e3c059fc2f16b17dff8762f9da2f703a95c7b05271978fa88623"
@@ -246,8 +278,12 @@ def test_dpsprt_tuned_snapshot():
 def test_dpsprt_subsampled_snapshot():
     digest = _decisions_hash(
         lambda s: DPSPRTSubsampled(
-            mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05,
-            epsilon=1.0, random_seed=s,
+            mu0=0.3,
+            mu1=0.7,
+            alpha=0.05,
+            beta=0.05,
+            epsilon=1.0,
+            random_seed=s,
         )
     )
     # Baseline updated after switching the M_n=0 fallback from a None
@@ -268,20 +304,25 @@ def test_reset_advances_rng_for_independent_trials():
     that consecutive reset() calls produce DIFFERENT _aux_z_unit draws for each
     of the four core incremental classes.
     """
-    from dpsprt.core.sprt import (
-        DPSPRT as CoreDPSPRT,
-        DPSPRTGaussian as CoreDPSPRTGaussian,
-        DPSPRTTuned as CoreDPSPRTTuned,
-        DPSPRTSubsampled as CoreDPSPRTSubsampled,
-    )
-    builders = [
+    from dpsprt.core.sprt import DPSPRT as CoreDPSPRT
+    from dpsprt.core.sprt import DPSPRTGaussian as CoreDPSPRTGaussian
+    from dpsprt.core.sprt import DPSPRTSubsampled as CoreDPSPRTSubsampled
+    from dpsprt.core.sprt import DPSPRTTuned as CoreDPSPRTTuned
+
+    builders: list = [
         lambda: CoreDPSPRT(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, random_seed=7),
-        lambda: CoreDPSPRTGaussian(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, delta=1e-5, random_seed=7),
-        lambda: CoreDPSPRTTuned(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, c1=1.0, c2=1.0, random_seed=7),
-        lambda: CoreDPSPRTSubsampled(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, random_seed=7),
+        lambda: CoreDPSPRTGaussian(
+            mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, delta=1e-5, random_seed=7
+        ),
+        lambda: CoreDPSPRTTuned(
+            mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, c1=1.0, c2=1.0, random_seed=7
+        ),
+        lambda: CoreDPSPRTSubsampled(
+            mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, random_seed=7
+        ),
     ]
     for build in builders:
-        inst = build()
+        inst: Any = build()
         z_seen = {inst._aux_z_unit}
         for _ in range(5):
             inst.reset()
@@ -309,8 +350,14 @@ def test_functional_dp_sprt_laplace_uses_single_threshold_z():
     constant 2*z/eps for every t.
     """
     from dpsprt.core.algorithms import dp_sprt_laplace
+
     lap2 = _run_functional_and_get_aux_noise(
-        dp_sprt_laplace, mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0,
+        dp_sprt_laplace,
+        mu0=0.3,
+        mu1=0.7,
+        alpha=0.05,
+        beta=0.05,
+        epsilon=1.0,
     )
     products = np.arange(1, len(lap2) + 1) * lap2
     assert np.allclose(products, products[0]), (
@@ -321,8 +368,16 @@ def test_functional_dp_sprt_laplace_uses_single_threshold_z():
 
 def test_functional_dp_sprt_tuned_uses_single_threshold_z():
     from dpsprt.core.algorithms import dp_sprt_tuned
+
     lap2 = _run_functional_and_get_aux_noise(
-        dp_sprt_tuned, mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, c1=1.0, c2=1.0,
+        dp_sprt_tuned,
+        mu0=0.3,
+        mu1=0.7,
+        alpha=0.05,
+        beta=0.05,
+        epsilon=1.0,
+        c1=1.0,
+        c2=1.0,
     )
     products = np.arange(1, len(lap2) + 1) * lap2
     assert np.allclose(products, products[0])
@@ -330,8 +385,14 @@ def test_functional_dp_sprt_tuned_uses_single_threshold_z():
 
 def test_functional_dp_sprt_subsampled_uses_single_threshold_z():
     from dpsprt.core.algorithms import dp_sprt_subsampled
+
     lap2 = _run_functional_and_get_aux_noise(
-        dp_sprt_subsampled, mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0,
+        dp_sprt_subsampled,
+        mu0=0.3,
+        mu1=0.7,
+        alpha=0.05,
+        beta=0.05,
+        epsilon=1.0,
     )
     products = np.arange(1, len(lap2) + 1) * lap2
     assert np.allclose(products, products[0])
@@ -341,6 +402,7 @@ def test_subsampled_never_decides_before_first_inclusion():
     """Before the first included sample (M_n = 0) the test must not be able to
     stop, and the recorded noisy_mean must not depend on the data."""
     from dpsprt.core.sprt import DPSPRTSubsampled as CoreSub
+
     # eps small so inclusion is rare → many leading rejection steps.
     inst_a = CoreSub(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=0.01, random_seed=11)
     inst_b = CoreSub(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=0.01, random_seed=11)
@@ -352,22 +414,28 @@ def test_subsampled_never_decides_before_first_inclusion():
         if inst_a.t_subsample > 0 or inst_b.t_subsample > 0:
             break
         assert not stop_a and not stop_b, "stopped before any sample was included"
-        assert inst_a.noisy_means[-1] == inst_b.noisy_means[-1], (
-            "noisy_mean depends on data before the first inclusion"
-        )
+        assert (
+            inst_a.noisy_means[-1] == inst_b.noisy_means[-1]
+        ), "noisy_mean depends on data before the first inclusion"
 
 
 def test_functional_subsampled_never_decides_before_first_inclusion():
     """The vectorized dp_sprt_subsampled must also suppress stopping at steps
     where no sample has been included yet."""
     from dpsprt.core.algorithms import dp_sprt_subsampled
+
     # Construct a regime where epsilon → 0 makes inclusion vanishingly rare so
     # that with high probability several leading steps have cumcount_included=0.
     np.random.seed(0)
     data = (np.random.rand(200) < 0.6).astype(int)
     np.random.seed(7)
     _, _, info = dp_sprt_subsampled(
-        data, mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=0.005,
+        data,
+        mu0=0.3,
+        mu1=0.7,
+        alpha=0.05,
+        beta=0.05,
+        epsilon=0.005,
     )
     include_mask = info["include_mask"]
     samples_included = np.cumsum(include_mask)
@@ -384,8 +452,14 @@ def test_subsampled_lists_aligned_in_length(bernoulli_stream):
     """DPSPRTSubsampled.subsampling_decisions and .noisy_means must share length
     so that list(zip(...)) does not misalign step indices."""
     from dpsprt.core.sprt import DPSPRTSubsampled as CoreSub
+
     test = CoreSub(
-        mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=0.1, random_seed=3,
+        mu0=0.3,
+        mu1=0.7,
+        alpha=0.05,
+        beta=0.05,
+        epsilon=0.1,
+        random_seed=3,
     )
     for x in itertools.islice(bernoulli_stream(0.6), 500):
         can_stop, _ = test.add_sample(x)

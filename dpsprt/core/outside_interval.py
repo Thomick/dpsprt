@@ -1,12 +1,16 @@
 """Core implementation of the OutsideInterval DP primitive and helpers.
 
-OutsideIntervalCore implements Algorithm 2 from the AISTATS 2026 paper: monitors
-a stream of query values and halts when a noisy query falls outside [T̂₀, T̂₁].
-Threshold noise is drawn once at construction; per-query noise is fresh each step.
+OutsideIntervalCore implements Algorithm 2 of the DP-SPRT paper (arXiv:2508.06377).
+It monitors a stream of query values and halts when a noisy query falls outside
+[T0 - Z, T1 + Z].  A single threshold noise Z is drawn at construction and shared
+by both comparisons, which is what makes the mechanism (eps_Z + eps_Y)-DP instead
+of costing two independent AboveThreshold instances.  Per-query noise is fresh at
+every step.
 
 dpsprt_interval_check() is a stateless helper shared by all four DP-SPRT variants.
 """
-from typing import Callable, Optional, Tuple
+
+from typing import Callable, Tuple
 
 import numpy as np
 
@@ -14,7 +18,8 @@ import numpy as np
 class OutsideIntervalCore:
     """Stateful implementation of the OutsideInterval algorithm (paper Algorithm 2).
 
-    Threshold noise is drawn once at construction; query noise is fresh per step.
+    One threshold noise Z is drawn at construction and shared by both threshold
+    comparisons, as the algorithm requires.  Query noise is fresh at every step.
     """
 
     def __init__(
@@ -34,8 +39,10 @@ class OutsideIntervalCore:
         self._step = 0
         self._stopped = False
         self._side = 0
-        self._threshold_noise_lower = rng.laplace(0, threshold_noise_scale)
-        self._threshold_noise_upper = rng.laplace(0, threshold_noise_scale)
+        # A single Z, shared by both comparisons.  Two independent draws would
+        # reduce the mechanism to two composed AboveThreshold instances and
+        # forfeit the factor-2 privacy improvement the algorithm is built on.
+        self._threshold_noise = rng.laplace(0, threshold_noise_scale)
 
     def add_query(self, value: float) -> Tuple[bool, int]:
         """Process next query value. Returns (stopped, side)."""
@@ -45,9 +52,9 @@ class OutsideIntervalCore:
         self._step += 1
         t = self._step
 
-        # Noisy thresholds: T̂₀ = τ₀(t) - noise_lower, T̂₁ = τ₁(t) + noise_upper
-        noisy_lower = self._lower_threshold(t) - self._threshold_noise_lower
-        noisy_upper = self._upper_threshold(t) + self._threshold_noise_upper
+        # T0(t) - Z and T1(t) + Z, the same Z on both sides.
+        noisy_lower = self._lower_threshold(t) - self._threshold_noise
+        noisy_upper = self._upper_threshold(t) + self._threshold_noise
 
         # Per-query noise
         nu = self._rng.laplace(0, self._query_noise_scale)
@@ -91,7 +98,8 @@ def dpsprt_interval_check(
       side = -1 → accept H₀ (noisy_query_h0 ≤ lower_threshold)
       side =  0 → continue
 
-    H₁ is checked first, matching the original code's priority.
+    H1 is checked first, so a step at which both conditions hold resolves to H1.
+    Ties have probability zero under continuous noise.
     """
     if noisy_query_h1 >= upper_threshold:
         return True, 1

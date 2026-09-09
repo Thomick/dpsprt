@@ -5,8 +5,6 @@ This module contains pre-computed values and mathematical constants that are use
 across different DP-SPRT implementations.
 """
 
-import numpy as np
-
 # Pre-computed value of the Riemann zeta function at s=1.1340
 # This appears in the privacy-preserving stopping conditions of DP-SPRT
 ZETA_S_VALUE = 5.591

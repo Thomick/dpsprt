@@ -16,15 +16,19 @@ import numpy as np
 from .constants import NUMERICAL_EPSILON, ZETA_S_PARAMETER, ZETA_S_VALUE
 
 
-def _theta(mu: np.ndarray) -> np.ndarray:
+def _theta(mu: float) -> float:
+    """Natural parameter of the Bernoulli family at mean ``mu``."""
     p = np.clip(mu, NUMERICAL_EPSILON, 1 - NUMERICAL_EPSILON)
-    return np.log(p / (1 - p))
+    return float(np.log(p / (1 - p)))
 
 
-def _kl_bernoulli(p, q):
+def _kl_bernoulli(p: float, q: float) -> float:
+    """KL divergence between Bernoulli(p) and Bernoulli(q)."""
     p_clip = np.clip(p, NUMERICAL_EPSILON, 1 - NUMERICAL_EPSILON)
     q_clip = np.clip(q, NUMERICAL_EPSILON, 1 - NUMERICAL_EPSILON)
-    return p_clip * np.log(p_clip / q_clip) + (1 - p_clip) * np.log((1 - p_clip) / (1 - q_clip))
+    return float(
+        p_clip * np.log(p_clip / q_clip) + (1 - p_clip) * np.log((1 - p_clip) / (1 - q_clip))
+    )
 
 
 def _first_crossing(condition_0: np.ndarray, condition_1: np.ndarray, n: int) -> Tuple[int, int]:
@@ -97,16 +101,15 @@ def dp_sprt_laplace(
     random_seed: Optional[int] = None,
 ) -> Tuple[int, int, Dict[str, Any]]:
     """ε-DP SPRT with Laplace noise."""
-    if random_seed is not None:
-        np.random.seed(random_seed)
+    rng = np.random.RandomState(random_seed)
 
     n = len(data)
     cumsum = np.cumsum(data)
     steps = np.arange(1, n + 1).astype(float)
     means = cumsum / steps
 
-    laplace_noise1 = np.random.laplace(0, 4 / (steps * epsilon))
-    z = np.random.laplace(0.0, 1.0)
+    laplace_noise1 = rng.laplace(0, 4 / (steps * epsilon))
+    z = rng.laplace(0.0, 1.0)
     laplace_noise2 = z * (2 / (steps * epsilon))
 
     noisy_means = means + laplace_noise1
@@ -116,17 +119,19 @@ def dp_sprt_laplace(
     s, zeta_s = ZETA_S_PARAMETER, ZETA_S_VALUE
 
     threshold_term_0 = (
-        _kl_bernoulli(mu0, mu1)
-        - np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon) * beta)) / steps
+        _kl_bernoulli(mu0, mu1) - np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon) * beta)) / steps
     ) / (theta1 - theta0)
-    privacy_term_0 = 6 * np.log(np.maximum(epsilon, 2) * (steps**s) * zeta_s / beta) / (steps * epsilon)
+    privacy_term_0 = (
+        6 * np.log(np.maximum(epsilon, 2) * (steps**s) * zeta_s / beta) / (steps * epsilon)
+    )
     condition_0 = noisy_means - mu0 <= threshold_term_0 - aux_noise - privacy_term_0
 
     threshold_term_1 = (
-        -_kl_bernoulli(mu1, mu0)
-        + np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon) * alpha)) / steps
+        -_kl_bernoulli(mu1, mu0) + np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon) * alpha)) / steps
     ) / (theta1 - theta0)
-    privacy_term_1 = 6 * np.log(np.maximum(epsilon, 2) * (steps**s) * zeta_s / alpha) / (steps * epsilon)
+    privacy_term_1 = (
+        6 * np.log(np.maximum(epsilon, 2) * (steps**s) * zeta_s / alpha) / (steps * epsilon)
+    )
     condition_1 = noisy_means - mu1 >= threshold_term_1 + aux_noise + privacy_term_1
 
     decision, stopping_time = _first_crossing(condition_0, condition_1, n)
@@ -157,12 +162,11 @@ def dp_sprt_subsampled(
     random_seed: Optional[int] = None,
 ) -> Tuple[int, int, Dict[str, Any]]:
     """ε-DP SPRT with Bernoulli subsampling (rate ``r = min(1, sqrt(ε/10))``)."""
-    if random_seed is not None:
-        np.random.seed(random_seed)
+    rng = np.random.RandomState(random_seed)
 
     n = len(data)
     q = min(1.0, np.sqrt(epsilon / 10))
-    include_mask = np.random.random(n) < q
+    include_mask = rng.random(n) < q
     data_masked = np.where(include_mask, data, 0.0)
     include_counts = include_mask.astype(float)
     cumsum_included = np.cumsum(data_masked)
@@ -180,8 +184,8 @@ def dp_sprt_subsampled(
     )
     has_sample = cumcount_included > 0
 
-    laplace_noise1 = np.random.laplace(0, q * 4 / (steps * epsilon))
-    z = np.random.laplace(0.0, 1.0)
+    laplace_noise1 = rng.laplace(0, q * 4 / (steps * epsilon))
+    z = rng.laplace(0.0, 1.0)
     laplace_noise2 = z * (2 * q / (steps * epsilon))
 
     noisy_means = means + laplace_noise1
@@ -189,29 +193,25 @@ def dp_sprt_subsampled(
 
     theta0, theta1 = _theta(mu0), _theta(mu1)
     s, zeta_s = ZETA_S_PARAMETER, ZETA_S_VALUE
-    m_n = np.maximum(cumcount_included, 1.0)  # safe denominator; conditions are masked by has_sample
+    m_n = np.maximum(
+        cumcount_included, 1.0
+    )  # safe denominator; conditions are masked by has_sample
 
     threshold_term_0 = (
-        _kl_bernoulli(mu0, mu1)
-        - np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon) * beta)) / m_n
+        _kl_bernoulli(mu0, mu1) - np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon) * beta)) / m_n
     ) / (theta1 - theta0)
     privacy_term_0 = (
         6 * q * np.log(np.maximum(epsilon, 2) * (steps**s) * zeta_s / beta) / (steps * epsilon)
     )
-    condition_0 = (
-        noisy_means - mu0 <= threshold_term_0 - aux_noise - privacy_term_0
-    ) & has_sample
+    condition_0 = (noisy_means - mu0 <= threshold_term_0 - aux_noise - privacy_term_0) & has_sample
 
     threshold_term_1 = (
-        -_kl_bernoulli(mu1, mu0)
-        + np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon) * alpha)) / m_n
+        -_kl_bernoulli(mu1, mu0) + np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon) * alpha)) / m_n
     ) / (theta1 - theta0)
     privacy_term_1 = (
         6 * q * np.log(np.maximum(epsilon, 2) * (steps**s) * zeta_s / alpha) / (steps * epsilon)
     )
-    condition_1 = (
-        noisy_means - mu1 >= threshold_term_1 + aux_noise + privacy_term_1
-    ) & has_sample
+    condition_1 = (noisy_means - mu1 >= threshold_term_1 + aux_noise + privacy_term_1) & has_sample
 
     decision, stopping_time = _first_crossing(condition_0, condition_1, n)
     info = {
@@ -243,16 +243,15 @@ def dp_sprt_tuned(
 
     ``c1 = c2 = 1`` recovers :func:`dp_sprt_laplace`.  ``c2 < 1`` has no privacy proof.
     """
-    if random_seed is not None:
-        np.random.seed(random_seed)
+    rng = np.random.RandomState(random_seed)
 
     n = len(data)
     cumsum = np.cumsum(data)
     steps = np.arange(1, n + 1).astype(float)
     means = cumsum / steps
 
-    laplace_noise1 = np.random.laplace(0, 4 / (steps * epsilon))
-    z = np.random.laplace(0.0, 1.0)
+    laplace_noise1 = rng.laplace(0, 4 / (steps * epsilon))
+    z = rng.laplace(0.0, 1.0)
     laplace_noise2 = z * (2 / (steps * epsilon))
 
     noisy_means = means + laplace_noise1
@@ -262,8 +261,7 @@ def dp_sprt_tuned(
     s, zeta_s = ZETA_S_PARAMETER, ZETA_S_VALUE
 
     threshold_term_0 = (
-        _kl_bernoulli(mu0, mu1)
-        - c1 * np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon) * beta)) / steps
+        _kl_bernoulli(mu0, mu1) - c1 * np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon) * beta)) / steps
     ) / (theta1 - theta0)
     privacy_term_0 = (
         c2 * 6 * np.log(np.maximum(epsilon, 2) * (steps**s) * zeta_s / beta) / (steps * epsilon)
@@ -308,8 +306,7 @@ def dp_sprt_gaussian(
     random_seed: Optional[int] = None,
 ) -> Tuple[int, int, Dict[str, Any]]:
     """(ε,δ)-DP SPRT with Gaussian noise (RDP analysis)."""
-    if random_seed is not None:
-        np.random.seed(random_seed)
+    rng = np.random.RandomState(random_seed)
 
     n = len(data)
     cumsum = np.cumsum(data)
@@ -320,8 +317,8 @@ def dp_sprt_gaussian(
     gaussian_std1 = np.sqrt(8 * np.log(1.25 / delta)) / (2 * epsilon_prime * steps)
     gaussian_std2 = np.sqrt(2 * np.log(1.25 / delta)) / (2 * epsilon_prime * steps)
 
-    gaussian_noise1 = np.random.normal(0, gaussian_std1)
-    z = np.random.normal(0.0, 1.0)
+    gaussian_noise1 = rng.normal(0, gaussian_std1)
+    z = rng.normal(0.0, 1.0)
     gaussian_noise2 = z * gaussian_std2
 
     noisy_means = means + gaussian_noise1
@@ -335,7 +332,8 @@ def dp_sprt_gaussian(
         - np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon_prime) * beta)) / steps
     ) / (theta1 - theta0)
     privacy_term_0 = np.sqrt(
-        2 * (gaussian_std1**2 + gaussian_std2**2)
+        2
+        * (gaussian_std1**2 + gaussian_std2**2)
         * np.log(np.maximum(epsilon_prime, 2) * (steps**s) * zeta_s / beta)
     )
     condition_0 = noisy_means - mu0 <= threshold_term_0 - aux_noise - privacy_term_0
@@ -345,7 +343,8 @@ def dp_sprt_gaussian(
         + np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon_prime) * alpha)) / steps
     ) / (theta1 - theta0)
     privacy_term_1 = np.sqrt(
-        2 * (gaussian_std1**2 + gaussian_std2**2)
+        2
+        * (gaussian_std1**2 + gaussian_std2**2)
         * np.log(np.maximum(epsilon_prime, 2) * (steps**s) * zeta_s / alpha)
     )
     condition_1 = noisy_means - mu1 >= threshold_term_1 + aux_noise + privacy_term_1

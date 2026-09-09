@@ -5,10 +5,13 @@ and returns ``(can_stop, decision)`` where ``decision`` is ``-1`` for H₀,
 ``+1`` for H₁, and ``0`` while sampling continues.
 
 For all DP variants, the threshold noise ``Z`` is drawn once at ``reset()`` and
-rescaled by ``1/t`` on the mean scale at each step — this is the
-OutsideInterval mechanism from the paper.  ``reset()`` advances the rng rather
-than re-seeding it, so reusing one seeded instance across trials yields
-independent Z draws.
+rescaled by ``1/t`` on the mean scale at each step, one Z shared by both
+threshold comparisons.  This is the OutsideInterval mechanism of the paper.
+``reset()`` advances the rng rather than re-seeding it, so reusing one seeded
+instance across trials yields independent Z draws.
+
+Noise is drawn with numpy floating-point arithmetic and a non-cryptographic
+generator, so the guarantees are those of the idealized real-valued mechanisms.
 """
 
 from typing import Any, Dict, Optional, Tuple
@@ -150,18 +153,22 @@ class DPSPRT:
         n = float(self.t)
 
         tau0_rhs = (
-            self.kl_h0_h1
-            - np.log(1 / (np.maximum(0.5, 1 - 1 / self.epsilon) * self.beta)) / n
-        ) / (theta1 - theta0) - lap2 - 6 * np.log(
-            np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.beta
-        ) / (n * self.epsilon)
+            (self.kl_h0_h1 - np.log(1 / (np.maximum(0.5, 1 - 1 / self.epsilon) * self.beta)) / n)
+            / (theta1 - theta0)
+            - lap2
+            - 6
+            * np.log(np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.beta)
+            / (n * self.epsilon)
+        )
 
         tau1_rhs = (
-            -self.kl_h1_h0
-            + np.log(1 / (np.maximum(0.5, 1 - 1 / self.epsilon) * self.alpha)) / n
-        ) / (theta1 - theta0) + lap2 + 6 * np.log(
-            np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.alpha
-        ) / (n * self.epsilon)
+            (-self.kl_h1_h0 + np.log(1 / (np.maximum(0.5, 1 - 1 / self.epsilon) * self.alpha)) / n)
+            / (theta1 - theta0)
+            + lap2
+            + 6
+            * np.log(np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.alpha)
+            / (n * self.epsilon)
+        )
 
         stopped, side = dpsprt_interval_check(
             current_mean - self.mu0 + lap1,
@@ -260,20 +267,20 @@ class DPSPRTGaussian:
         n = float(self.t)
 
         threshold_term_0 = (
-            self.kl_h0_h1
-            - np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon_prime) * self.beta)) / n
+            self.kl_h0_h1 - np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon_prime) * self.beta)) / n
         ) / (theta1 - theta0)
         threshold_term_1 = (
-            -self.kl_h1_h0
-            + np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon_prime) * self.alpha)) / n
+            -self.kl_h1_h0 + np.log(1 / (np.maximum(0.5, 1 - 1 / epsilon_prime) * self.alpha)) / n
         ) / (theta1 - theta0)
 
         privacy_term_0 = np.sqrt(
-            2 * (gaussian_std1**2 + gaussian_std2**2)
+            2
+            * (gaussian_std1**2 + gaussian_std2**2)
             * np.log(np.maximum(epsilon_prime, 2) * (n**s) * zeta_s / self.beta)
         )
         privacy_term_1 = np.sqrt(
-            2 * (gaussian_std1**2 + gaussian_std2**2)
+            2
+            * (gaussian_std1**2 + gaussian_std2**2)
             * np.log(np.maximum(epsilon_prime, 2) * (n**s) * zeta_s / self.alpha)
         )
 
@@ -381,7 +388,9 @@ class DPSPRTTuned:
             - self.c1 * np.log(1 / (np.maximum(0.5, 1 - 1 / self.epsilon) * self.beta)) / n
         ) / (theta1 - theta0)
         privacy_term_0 = (
-            self.c2 * 6 * np.log(np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.beta)
+            self.c2
+            * 6
+            * np.log(np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.beta)
             / (n * self.epsilon)
         )
 
@@ -390,7 +399,9 @@ class DPSPRTTuned:
             + self.c1 * np.log(1 / (np.maximum(0.5, 1 - 1 / self.epsilon) * self.alpha)) / n
         ) / (theta1 - theta0)
         privacy_term_1 = (
-            self.c2 * 6 * np.log(np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.alpha)
+            self.c2
+            * 6
+            * np.log(np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.alpha)
             / (n * self.epsilon)
         )
 
@@ -435,9 +446,10 @@ class DPSPRTTuned:
 class DPSPRTSubsampled:
     """ε-DP SPRT with Bernoulli subsampling for privacy amplification.
 
-    Subsampling rate ``r = min(1, sqrt(ε/10))``.  Stopping conditions follow
-    ``appendix/subsampling.tex`` (denominator uses the actual subsample count
-    ``M_n``; the JAX reference code uses the deterministic ``r·n``).
+    Subsampling rate ``r = min(1, sqrt(eps/10))``.  Stopping conditions follow the
+    subsampling appendix of arXiv:2508.06377, whose denominator is the realised
+    subsample count ``M_n``.  The JAX code that produced the paper's figures uses
+    the deterministic ``r * n`` instead, so stopping times differ slightly.
     """
 
     def __init__(
@@ -513,20 +525,22 @@ class DPSPRTSubsampled:
         m_n = float(self.t_subsample)
 
         threshold_term_0 = (
-            self.kl_h0_h1
-            - np.log(1 / (np.maximum(0.5, 1 - 1 / self.epsilon) * self.beta)) / m_n
+            self.kl_h0_h1 - np.log(1 / (np.maximum(0.5, 1 - 1 / self.epsilon) * self.beta)) / m_n
         ) / (theta1 - theta0)
         privacy_term_0 = (
-            q * 6 * np.log(np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.beta)
+            q
+            * 6
+            * np.log(np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.beta)
             / (n * self.epsilon)
         )
 
         threshold_term_1 = (
-            -self.kl_h1_h0
-            + np.log(1 / (np.maximum(0.5, 1 - 1 / self.epsilon) * self.alpha)) / m_n
+            -self.kl_h1_h0 + np.log(1 / (np.maximum(0.5, 1 - 1 / self.epsilon) * self.alpha)) / m_n
         ) / (theta1 - theta0)
         privacy_term_1 = (
-            q * 6 * np.log(np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.alpha)
+            q
+            * 6
+            * np.log(np.maximum(self.epsilon, 2) * (n**s) * zeta_s / self.alpha)
             / (n * self.epsilon)
         )
 
