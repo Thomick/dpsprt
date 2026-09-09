@@ -132,13 +132,13 @@ def test_dpsprt_gaussian_accepts_h0_on_clear_h0_stream(bernoulli_stream):
     assert correct / n_runs >= 0.90, f"Only {correct}/{n_runs} runs accepted H0"
 
 
-def test_dpsprt_tuned_warns_below_unit_c2():
-    """c2 < 1 keeps privacy but voids the (alpha, beta) guarantee, so it warns.
+def test_dpsprt_tuned_accepts_the_papers_kappa():
+    """c2 < 1 keeps privacy and only gives up the (alpha, beta) guarantee.
 
     This is the regime the paper's tuned experiment uses, at kappa about 0.5.
     """
-    with pytest.warns(UserWarning, match="correctness proof"):
-        DPSPRTTuned(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, c1=1.0, c2=0.5)
+    test = DPSPRTTuned(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, c1=1.0, c2=0.5)
+    assert test.params.c2 == 0.5
 
 
 def test_dpsprt_tuned_rejects_nonpositive_c2():

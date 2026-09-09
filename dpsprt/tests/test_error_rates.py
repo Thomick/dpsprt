@@ -137,8 +137,6 @@ def test_tuned_kappa_half_reproduces_the_paper_tradeoff():
     Both are checked here, along with the paper's caveat that the factor does
     not transfer, by confirming a smaller kappa breaks the target.
     """
-    import warnings
-
     from dpsprt import DPSPRTTuned
 
     mu0, mu1, alpha, beta, eps = 0.3, 0.7, 0.1, 0.1, 1.0
@@ -149,9 +147,7 @@ def test_tuned_kappa_half_reproduces_the_paper_tradeoff():
         times, wrong = [], 0
         for run in range(200):
             data = rng.binomial(1, p, size=40000)
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", UserWarning)
-                test = DPSPRTTuned(mu0, mu1, alpha, beta, eps, c1=1.0, c2=kappa, random_seed=run)
+            test = DPSPRTTuned(mu0, mu1, alpha, beta, eps, c1=1.0, c2=kappa, random_seed=run)
             decision, stop = _run_to_decision(test, data)
             times.append(stop)
             if decision == wrong_decision:

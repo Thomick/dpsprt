@@ -65,7 +65,7 @@ JAX code that produced the paper's figures.
 
 `DPSPRTTuned`'s `c₂` is the paper's `κ`, the factor scaling `C(n, δ)`. Privacy holds
 for every `c₂ > 0`, since the noise is untouched; only the `(α, β)` guarantee needs
-`c₂ ≥ 1`. Smaller values are allowed and warn. On the paper's Instance 1 at `ε = 1`
+`c₂ ≥ 1`. Smaller values are allowed. On the paper's Instance 1 at `ε = 1`
 and `α = β = 0.1`, `κ = 0.5` holds both error rates under target (0.037 and 0.032 over
 600 runs) while cutting the mean stopping time from 292 to 96, and `κ = 0.25` breaks
 the target at 0.25. The factor has to be re-estimated for every new setting.
