@@ -270,8 +270,7 @@ class TestBatchHelper:
         test = DPSPRT(mu0=0.3, mu1=0.7, alpha=0.05, beta=0.05, epsilon=1.0, random_seed=42)
 
         # Generate test data
-        np.random.seed(456)
-        data = np.random.binomial(1, 0.6, size=50)
+        data = np.random.default_rng(456).binomial(1, 0.6, size=50)
 
         # Run using helper function
         decision, stopping_time, info = run_sprt_on_batch(test, data)
@@ -282,11 +281,10 @@ class TestBatchHelper:
         assert stopping_time >= 0
         assert isinstance(info, dict)
 
-        # Verify info contains expected fields for DP algorithms (privacy-restricted)
-        # For DP algorithms, detailed info is not available due to privacy protection
+        # get_state() exposes only the privacy-safe fields for DP variants.
         assert "algorithm_type" in info
         assert "epsilon" in info
-        # Sample count not available for DP algorithms due to privacy restrictions
+        assert "cumulative_sum" not in info
 
 
 class TestPrivacyRestrictions:

@@ -29,6 +29,15 @@ First release on PyPI. Versions 1.0.0 and 1.1.0 existed only in the repository a
 - The classifier is `Development Status :: 4 - Beta`.
 - Docstrings and the README record that noise is drawn with floating-point arithmetic and a non-cryptographic generator, so the guarantees are those of the idealized real-valued mechanisms.
 
+### Documentation
+
+- The module docstring defined `(eps, delta)`-DP as "eps-DP holds with probability >= (1-delta)", which is not what approximate DP says. It now states the guarantee as Theorem 1(i) does, and notes that the Gaussian variant goes through the paper's Renyi DP profile.
+- Prose now uses the paper's vocabulary. `C(n, delta)` is the correction function rather than the "privacy term", `gamma` is the error allocation, `Z` and `Y_n` are the threshold and query noise, and `r` is the subsampling rate.
+- The README records that `DPSPRTTuned`'s `c2` plays the role of the paper's `kappa`, that the paper's tuned experiment takes `kappa` about 0.5, and that this class rejects `c2 < 1` and so does not reproduce it.
+- The README records that `DPSPRTSubsampled` divides by the realised subsample count `M_n`, following the subsampling appendix rather than the deterministic `r*n` used by the JAX code.
+- `examples/stopping_times_demo.py` labelled a row "Tuned (c1=0.5)", which scales the SPRT threshold rather than the correction function. The label now says so.
+
 ### Removed
 
 - `DPSPRTSubsampled.get_subsampling_info()`, which existed only to raise.
+- `DEFAULT_MAX_SAMPLES`, exported from `dpsprt.core` and never read. No algorithm caps its sample count, so the name promised a limit that did not exist.

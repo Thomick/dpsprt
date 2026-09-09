@@ -12,7 +12,7 @@ from .algorithms import (
     dp_sprt_subsampled,
     dp_sprt_tuned,
 )
-from .constants import DEFAULT_MAX_SAMPLES, NUMERICAL_EPSILON, ZETA_S_PARAMETER, ZETA_S_VALUE
+from .constants import NUMERICAL_EPSILON, ZETA_S_PARAMETER, ZETA_S_VALUE
 from .outside_interval import OutsideIntervalCore
 from .sprt import (
     DPSPRT,
@@ -36,6 +36,5 @@ __all__ = [
     "ZETA_S_VALUE",
     "ZETA_S_PARAMETER",
     "NUMERICAL_EPSILON",
-    "DEFAULT_MAX_SAMPLES",
     "OutsideIntervalCore",
 ]

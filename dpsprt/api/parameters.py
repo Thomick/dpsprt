@@ -74,10 +74,12 @@ class DPSPRTGaussianParameters(DPSPRTParameters):
 
 @dataclass
 class DPSPRTTunedParameters(DPSPRTParameters):
-    """DP-SPRT parameters with tunable constants ``c1`` (threshold) and ``c2`` (privacy term).
+    """DP-SPRT parameters scaling the threshold by ``c1`` and the correction by ``c2``.
 
-    ``c2 < 1`` reduces the privacy correction below the bound required by the
-    correctness proof and is rejected.
+    The paper's correction function is ``C(n, delta) = 6 log(n^s zeta(s) / delta) / (n eps)``,
+    and ``c2`` scales it.  ``c2`` plays the role of the paper's kappa, which its
+    tuned experiment sets to about 0.5.  ``c2 < 1`` is rejected here, so this
+    class does not reproduce that experiment; see the note in the README.
     """
 
     c1: float = 1.0
@@ -89,8 +91,11 @@ class DPSPRTTunedParameters(DPSPRTParameters):
             raise ValueError(f"c1 must be positive, got {self.c1}")
         if self.c2 < 1.0:
             raise ValueError(
-                f"c2 must be >= 1.0, got {self.c2}. Smaller values violate the "
-                "privacy-correction bound from the AISTATS 2026 correctness proof."
+                f"c2 must be >= 1.0, got {self.c2}. A smaller value shrinks the "
+                "correction function below what the correctness proof requires, so "
+                "the (alpha, beta) guarantee no longer holds. The paper's tuned "
+                "experiment does exactly that with kappa about 0.5 and reports it "
+                "works empirically without the guarantee."
             )
 
     def to_dict(self) -> Dict[str, Any]:

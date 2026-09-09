@@ -239,7 +239,7 @@ def dp_sprt_tuned(
     c2: float = 1.0,
     random_seed: Optional[int] = None,
 ) -> Tuple[int, int, Dict[str, Any]]:
-    """DP-SPRT (Laplace) with tunable constants ``c1`` (threshold) and ``c2`` (privacy term).
+    """DP-SPRT (Laplace) scaling the SPRT threshold by ``c1`` and the correction function by ``c2``.
 
     ``c1 = c2 = 1`` recovers :func:`dp_sprt_laplace`.  ``c2 < 1`` has no privacy proof.
     """

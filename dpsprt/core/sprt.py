@@ -320,7 +320,7 @@ class DPSPRTGaussian:
 
 
 class DPSPRTTuned:
-    """DP-SPRT (Laplace) with tunable threshold and privacy-correction constants.
+    """DP-SPRT (Laplace) scaling the SPRT threshold by ``c1`` and the correction function by ``c2``.
 
     ``c1=c2=1`` recovers :class:`DPSPRT`.  ``c2 < 1`` has no privacy proof.
     """

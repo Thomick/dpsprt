@@ -49,7 +49,7 @@ def main():
             ("DP-SPRT ε=2", DPSPRT(mu0, mu1, alpha, beta, 2.0, random_seed=42)),
             ("DP-SPRT ε=5", DPSPRT(mu0, mu1, alpha, beta, 5.0, random_seed=42)),
             (
-                "Tuned (c1=0.5)",
+                "Tuned (threshold c1=0.5)",
                 DPSPRTTuned(mu0, mu1, alpha, beta, 1.0, c1=0.5, c2=1.0, random_seed=42),
             ),
             (

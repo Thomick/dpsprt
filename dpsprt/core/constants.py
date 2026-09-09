@@ -12,8 +12,9 @@ ZETA_S_VALUE = 5.591
 # Parameter s for the zeta function used in DP-SPRT privacy analysis
 ZETA_S_PARAMETER = 1.1340
 
+# The paper's error allocation gamma is fixed at max(0.5, 1 - 1/eps) throughout,
+# so 1/(1 - gamma) equals max(eps, 2), which is the form the code uses inside the
+# correction function.
+
 # Small epsilon value to avoid numerical issues (division by zero, log of zero)
 NUMERICAL_EPSILON = 1e-10
-
-# Default maximum number of samples for any SPRT test
-DEFAULT_MAX_SAMPLES = 10000

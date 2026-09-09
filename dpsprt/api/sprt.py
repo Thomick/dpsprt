@@ -108,7 +108,7 @@ class DPSPRTGaussian(BaseSPRT):
 
 
 class DPSPRTTuned(BaseSPRT):
-    """DP-SPRT (Laplace) with tunable constants ``c1`` (threshold) and ``c2`` (privacy term)."""
+    """DP-SPRT (Laplace) scaling the threshold by ``c1`` and the correction by ``c2``."""
 
     def __init__(
         self,

@@ -34,9 +34,12 @@ Algorithm Variants:
     - DPSPRTGaussian: DP-SPRT with Gaussian noise ((ε,δ)-DP)
 
 Privacy Guarantees:
-    All DP variants provide rigorous differential privacy guarantees:
-    - Pure ε-DP: Probability ratios bounded by e^ε
-    - (ε,δ)-DP: ε-DP holds with probability ≥ (1-δ)
+    Every DP variant instantiates the OutsideInterval mechanism, which is
+    (eps_Z + eps_Y)-DP by Theorem 1(i) of the paper, where Z is the threshold
+    noise and Y the per-query noise.  DPSPRT, DPSPRTTuned and DPSPRTSubsampled
+    use Laplace noise and give pure eps-DP.  DPSPRTGaussian uses Gaussian
+    noise, for which Theorem 1(ii) gives a Renyi DP profile that converts to
+    (eps, delta)-DP.
 
 Runnable scripts live in the examples/ directory of the source repository:
     - paper_experiments.py: reproduces the headline AISTATS 2026 figure

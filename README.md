@@ -44,16 +44,29 @@ decision, stopping_time, state = run_sprt_on_batch(test, data)
 
 ## Algorithms
 
-| Class                | Privacy             | Notes                                       |
-| -------------------- | ------------------- | ------------------------------------------- |
-| `ClassicalSPRT`      | none                | Wald's SPRT, baseline                       |
-| `DPSPRT`             | ε-DP                | Laplace noise                               |
-| `DPSPRTGaussian`     | (ε, δ)-DP           | Gaussian noise (RDP)                        |
-| `DPSPRTTuned`        | ε-DP                | Tunable c₁ (threshold) and c₂ ≥ 1 (privacy) |
-| `DPSPRTSubsampled`   | ε-DP                | Bernoulli subsampling amplification         |
+| Class                | Privacy             | Notes                                                  |
+| -------------------- | ------------------- | ------------------------------------------------------ |
+| `ClassicalSPRT`      | none                | Wald's SPRT, baseline                                  |
+| `DPSPRT`             | ε-DP                | Laplace noise                                          |
+| `DPSPRTGaussian`     | (ε, δ)-DP           | Gaussian noise, via the paper's RDP profile            |
+| `DPSPRTTuned`        | ε-DP                | scales the threshold by c₁ and the correction by c₂ ≥ 1 |
+| `DPSPRTSubsampled`   | ε-DP                | Bernoulli subsampling at rate r = min(1, √(ε/10))      |
 
-A standalone, one-shot vectorized version of each algorithm lives in
+All five instantiate the OutsideInterval mechanism, which is `(ε_Z + ε_Y)`-DP by
+Theorem 1(i) of the paper. Each has a one-shot vectorized counterpart in
 `dpsprt.core.algorithms` (`dp_sprt_laplace`, `dp_sprt_gaussian`, …).
+
+Notation follows the paper. `C(n, δ)` is the correction function, `γ` the error
+allocation between SPRT error and privacy noise (fixed here at `max(0.5, 1 − 1/ε)`),
+`Z` the threshold noise drawn once, `Y_n` the per-step query noise, and `r` the
+subsampling rate. `DPSPRTSubsampled` divides by the realised subsample count `M_n`,
+following the subsampling appendix rather than the deterministic `r·n` used by the
+JAX code that produced the paper's figures.
+
+`DPSPRTTuned`'s `c₂` plays the role of the paper's `κ`, which scales `C(n, δ)`.
+The paper's tuned experiment takes `κ ≈ 0.5` and reports that it works empirically
+without the `(α, β)` guarantee. This class rejects `c₂ < 1`, so it does not
+reproduce that experiment.
 
 ## OutsideInterval primitive
 

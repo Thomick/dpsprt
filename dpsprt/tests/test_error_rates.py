@@ -55,7 +55,7 @@ def test_classical_sprt_controls_both_error_rates():
 
 
 def test_dpsprt_controls_both_error_rates():
-    """DP-SPRT inherits the guarantee; the privacy correction makes it conservative."""
+    """DP-SPRT inherits the guarantee; the correction function makes it conservative."""
     type_i = _error_rate(
         lambda r: DPSPRT(MU0, MU1, ALPHA, BETA, epsilon=2.0, random_seed=r),
         MU0,
